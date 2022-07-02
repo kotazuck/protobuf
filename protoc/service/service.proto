@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+package api;
+
+option go_package = "github.com/kotazuck/protobuf/golang";
+
+service Data {
+  rpc GetData(GetDataRequest) returns (GetDataResponse) {}
+}
+
+message GetDataRequest {
+  string id = 1;
+}
+
+message GetDataResponse {
+  string id = 1;
+  string name = 2;
+}

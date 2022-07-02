@@ -1,0 +1,55 @@
+#!/bin/bash
+
+if [ ${#} -lt 1 ]; then
+  echo "usage: compile <language> <language version> <protobuf version>"
+  exit 1
+fi
+
+cd $(dirname ${0})
+
+if [ -f ./.env ]; then
+  . ./.env
+fi
+
+PROTOBUF_LATEST=$(curl -s https://api.github.com/repos/protocolbuffers/protobuf/releases | jq -r '.[0].tag_name' | sed -E 's/v(.*)/\1/')
+
+LANGUAGE=${1}
+LANGUAGE_VERSION=${LANGUAGE_VERSION:-latest}
+PROTOBUF_VERSION=${PROTOBUF_VERSION:-${PROTOBUF_LATEST}}
+
+shift
+
+while [ ${#} -gt 0 ]
+do
+  case ${1} in
+    --language-version)
+      LANGUAGE_VERSION=${2}
+      shift
+      ;;
+    --protobuf-version)
+      PROTOBUF_VERSION=${2}
+      shift
+      ;;
+  esac
+  shift
+done
+
+PROJECT_DIR=$(pwd)
+
+PACKAGE_DIR=${PROJECT_DIR}/${LANGUAGE}
+
+COMPILER_DIR=${PROJECT_DIR}/compiler/${LANGUAGE}
+
+TAG=protobuf/${LANGUAGE}:${PROTOBUF_VERSION}-${LANGUAGE_VERSION}
+
+docker build \
+  -t ${TAG} \
+  --build-arg LANGUAGE_VERSION=${LANGUAGE_VERSION} \
+  --build-arg PROTOBUF_VERSION=${PROTOBUF_VERSION} \
+  ${COMPILER_DIR}
+
+docker run -it --rm \
+  -u $(id -u):$(id -g) \
+  -v ${PROJECT_DIR}:/usr/local/src/project \
+  ${TAG}
+
